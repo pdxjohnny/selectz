@@ -112,8 +112,15 @@ class Selector(object):
                 [k for k, v in self.handlers['except'].items()],
                 timeout)
         ready = [('read', r), ('write', w), ('except', e)]
-        handlers_and_clients = [(self.handlers[j[0]][i], i) for j in ready \
-                for i in j[1] if i in self.handlers[j[0]]]
+        handlers_and_clients = []
+        for action, sockets in ready:
+            for client in sockets:
+                if client in self.handlers[action]:
+                    if getattr(self.handlers[action][client], 'unregister',
+                            False) is True:
+                        self.unregister(action, client)
+                    handlers_and_clients.append((self.handlers[action][client],
+                        client))
         ret = []
         for handler, client in handlers_and_clients:
             try:

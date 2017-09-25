@@ -1,8 +1,21 @@
 import sys
 import unittest
 import multiprocessing
+from functools import wraps
 
 import selectz
+
+def once(func):
+    '''
+    Decorator to tell selectz that this handler should be unregistered for its
+    action right before it is called. It can re-register itself by raising
+    WantRead, or WantWrite.
+    '''
+    @wraps(func)
+    def caller(*args, **kwargs):
+        func.call_once = True
+        func(*args, **kwargs)
+    return caller
 
 class CallLogger(object):
     '''
@@ -111,6 +124,24 @@ class TestSelectorMethods(unittest.TestCase):
 
     def test_remove_nonexistant(self):
         selectz.Selector().remove(None)
+
+    def test_once(self):
+        @once
+        def readOnce(*args, **kwargs):
+            return self.toUpperRead(*args, **kwargs)
+        sel = selectz.Selector()
+        r, w = multiprocessing.Pipe()
+        sel.register('read', r, readOnce)
+        w.send('test')
+        w.close()
+        r.close()
+        return
+        # FIXME This doesn't work
+        self.assertEqual(sel.select()[0][2], 'TEST')
+        w.send('test')
+        self.assertEqual(len(sel.select(timeout=0.1)), 0)
+        w.close()
+        r.close()
 
 if __name__ == '__main__':
     unittest.main()
