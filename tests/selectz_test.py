@@ -4,6 +4,16 @@ import multiprocessing
 
 import selectz
 
+class CallLogger(object):
+    '''
+    Increments self.called when called.
+    '''
+    def __init__(self):
+        self.called = 0
+
+    def __call__(self):
+        self.called += 1
+
 class TestSelectorMethods(unittest.TestCase):
 
     def toUpperRead(self, client):
@@ -29,6 +39,42 @@ class TestSelectorMethods(unittest.TestCase):
         sel.register('read', r, self.toUpperRead)
         w.send('test')
         self.assertEqual(sel.select()[0][2], 'TEST')
+        w.close()
+        r.close()
+
+    def test_register_WantRegister_no_args(self):
+        sel = selectz.Selector()
+        r, w = multiprocessing.Pipe()
+        class Logger(CallLogger):
+            def __call__(self, recvfd):
+                super().__call__()
+                raise selectz.WantRead()
+        logger = Logger()
+        sel.register('read', r, logger)
+        w.send('test')
+        sel.select()
+        self.assertEqual(logger.called, 1)
+        w.send('test')
+        sel.select()
+        self.assertEqual(logger.called, 2)
+        w.close()
+        r.close()
+
+    def test_register_WantRegister(self):
+        sel = selectz.Selector()
+        r, w = multiprocessing.Pipe()
+        class Logger(CallLogger):
+            def __call__(self, recvfd):
+                super().__call__()
+                raise selectz.WantRead(recvfd, self)
+        logger = Logger()
+        sel.register('read', r, logger)
+        w.send('test')
+        sel.select()
+        self.assertEqual(logger.called, 1)
+        w.send('test')
+        sel.select()
+        self.assertEqual(logger.called, 2)
         w.close()
         r.close()
 

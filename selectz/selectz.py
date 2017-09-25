@@ -9,6 +9,22 @@ import select
 
 class InvalidAction(Exception): pass
 
+class WantRemove(Exception):
+
+    def __init__(self, sock=None):
+        self.sock = sock
+
+class WantRegister(Exception):
+
+    def __init__(self, sock=None, handler=None):
+        self.action = self.__class__.__name__.lower().replace('want', '')
+        self.handler = handler
+        self.sock = sock
+
+class WantRead(WantRegister): pass
+
+class WantWrite(WantRegister): pass
+
 class Selector(object):
     '''
     Keeps track of handlers for events.
@@ -98,5 +114,15 @@ class Selector(object):
         ready = [('read', r), ('write', w), ('except', e)]
         handlers_and_clients = [(self.handlers[j[0]][i], i) for j in ready \
                 for i in j[1] if i in self.handlers[j[0]]]
-        return [(client, handler, handler(client)) \
-                for handler, client in handlers_and_clients]
+        ret = []
+        for handler, client in handlers_and_clients:
+            try:
+                ret.append((client, handler, handler(client)))
+            except WantRegister as e:
+                if e.sock is None: e.sock = client
+                if e.handler is None: e.handler = handler
+                self.register(e.action, e.sock, e.handler)
+            except WantRemove as e:
+                if e.sock is None: e.sock = client
+                self.remove(e.sock)
+        return ret
