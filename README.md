@@ -1,74 +1,26 @@
-# Autotools Example
-
-This repo contains a sample project with the Makefile.am and configure.ac files with content to construct a shared and static library for C++ (Linux and OSX).
-
+# Selectz
 
 ## Installation
 
-**Clone repo**
-
 ```bash
-git clone git@github.com:dblommesteijn/autotools-example.git
-cd autotools-example
-```
-
-**Configuration**
-
-Constructing configuration and Makefiles
-
-```bash
+git clone git@github.com:pdxjohnny/selectz -b cpp
+cd selectz
 autoreconf -vfi
 ./configure
-```
-
-**Compiling/ Linking**
-
-Compile and install the library to the OS defaults (`/usr/local/lib` and `/usr/local/include`)
-
-```bash
 sudo make install
 ```
 
+> Compiles and installs selectz to the OS default location
+> (usually `/usr/local/lib` and `/usr/local/include`)
 
-## Using Lib
 
-Including the created library with your project. 
-
-*NOTE: you have to install the library before headers can be found, and linking can be done*
-
-**C++ code snippet**
-
-*This example can be found in `example/`.*
+## Usage
 
 ```cpp
-#include <toollib.h>
+#include <selectz.h>
+
 int main(int args, char** argv) {
-	toollib("I'm using toollib!!");	
+	printf("I'm using selectz version %s!!", SELECTZ_VERSION);
 	return 0;
 }
 ```
-
-**Compile with clang**
-
-Assuming the library is installed at the OS default location, otherwise you have to provide flags -I and -L accordingly.
-
-```bash
-clang++ -Wall -std=c++11 -O3 -fPIC -c main.cpp
-clang++ main.o -o main -lautotools
-./main
-```
-
-## Removing Clutter
-
-You have to become root to cleanup, because `sudo make install` generates `src/.libs/*`.
-
-```bash
-sudo sh cleanup.sh
-```
-
-## Uninstalling Library
-
-```bash
-sudo make uninstall
-```
-
